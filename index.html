@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Job Agent — Autonomous LinkedIn Applier</title>
+  <meta name="description" content="Autonomous AI-powered job agent using Claude. Upload your resume, set criteria, apply autonomously."/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-orb">⚡</div>
+    <span class="logo-text">JobAgent <span class="logo-ai">AI</span></span>
+  </div>
+  <nav class="sidebar-nav">
+    <a href="#" class="nav-item active" onclick="showSection('dashboard',this)"><span class="nav-icon">🏠</span><span>Dashboard</span></a>
+    <a href="#" class="nav-item" onclick="showSection('setup',this)"><span class="nav-icon">⚙️</span><span>Setup &amp; APIs</span></a>
+    <a href="#" class="nav-item" onclick="showSection('profile',this)"><span class="nav-icon">👤</span><span>My Profile</span></a>
+    <a href="#" class="nav-item" onclick="showSection('criteria',this)"><span class="nav-icon">🎯</span><span>Job Criteria</span></a>
+    <a href="#" class="nav-item" onclick="showSection('agent',this)"><span class="nav-icon">🤖</span><span>Run Agent</span></a>
+    <a href="#" class="nav-item" onclick="showSection('log',this)"><span class="nav-icon">📊</span><span>Log <span class="nav-count" id="logCount">0</span></span></a>
+    <a href="#" class="nav-item" onclick="showSection('analytics',this)"><span class="nav-icon">📈</span><span>Analytics</span></a>
+    <a href="#" class="nav-item" onclick="showSection('tools',this)"><span class="nav-icon">🔧</span><span>Tools</span></a>
+  </nav>
+  <div class="sidebar-status">
+    <div class="status-dot" id="agentStatusDot"></div>
+    <span id="agentStatusText">Agent Idle</span>
+  </div>
+  <div class="server-status">
+    <span class="server-dot" id="serverDot"></span>
+    <span id="serverTxt">Checking server…</span>
+  </div>
+</aside>
+
+<main class="main-content">
+
+<!-- DASHBOARD -->
+<section class="section active" id="sec-dashboard">
+  <div class="section-header"><h1>Dashboard</h1><p>Your autonomous job application command center</p></div>
+  <div class="stats-grid">
+    <div class="stat-card" style="--ac:#7c6bff"><div class="stat-icon">🔍</div><div class="stat-value" id="stat-scanned">0</div><div class="stat-label">Jobs Scanned</div></div>
+    <div class="stat-card" style="--ac:#22c55e"><div class="stat-icon">✅</div><div class="stat-value" id="stat-applied">0</div><div class="stat-label">Applied</div></div>
+    <div class="stat-card" style="--ac:#5febc8"><div class="stat-icon">⭐</div><div class="stat-value" id="stat-score">—</div><div class="stat-label">Avg Score</div></div>
+    <div class="stat-card" style="--ac:#f59e0b"><div class="stat-icon">⏩</div><div class="stat-value" id="stat-skipped">0</div><div class="stat-label">Skipped</div></div>
+  </div>
+  <div class="dashboard-grid">
+    <div class="card">
+      <h2>🚀 Quick Start</h2>
+      <div class="steps">
+        <div class="step" id="step1"><div class="step-num">1</div><div class="step-info"><strong>Configure APIs</strong><br/><small>Anthropic + Google Sheets</small></div><div class="step-check" id="chk1">○</div></div>
+        <div class="step" id="step2"><div class="step-num">2</div><div class="step-info"><strong>Upload Resume</strong><br/><small>PDF, DOCX or TXT</small></div><div class="step-check" id="chk2">○</div></div>
+        <div class="step" id="step3"><div class="step-num">3</div><div class="step-info"><strong>Set Job Criteria</strong><br/><small>Role, salary, location…</small></div><div class="step-check" id="chk3">○</div></div>
+        <div class="step" id="step4"><div class="step-num">4</div><div class="step-info"><strong>Run Agent</strong><br/><small>Let Claude do the work</small></div><div class="step-check" id="chk4">○</div></div>
+      </div>
+    </div>
+    <div class="card"><h2>📡 Activity Feed</h2><div class="activity-feed" id="activityFeed"><div class="activity-empty">No activity yet.</div></div></div>
+  </div>
+  <div class="card">
+    <div class="card-header-row"><h2>🗂 Recent Applications</h2><a href="#" class="link-sm" onclick="showSection('log',document.querySelectorAll('.nav-item')[5])">View all →</a></div>
+    <div class="table-wrap"><table class="log-table"><thead><tr><th>Company</th><th>Role</th><th>Score</th><th>Status</th></tr></thead><tbody id="recentBody"><tr><td colspan="4" class="empty-row">No applications yet.</td></tr></tbody></table></div>
+  </div>
+</section>
+
+<!-- SETUP -->
+<section class="section" id="sec-setup">
+  <div class="section-header"><h1>Setup &amp; API Keys</h1><p>Connect Claude to power your agent</p></div>
+  <div class="card">
+    <h2>🔑 API Configuration</h2>
+    <div class="form-group">
+      <label>Anthropic API Key</label>
+      <div class="input-row">
+        <input type="password" id="anthropicKey" placeholder="sk-ant-api03-…" class="input-field"/>
+        <button class="btn-test" id="testKeyBtn" onclick="testAnthropicKey()">Test</button>
+      </div>
+      <small>Get yours at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a></small>
+    </div>
+    <div class="form-group">
+      <label>RapidAPI Key (JSearch)</label>
+      <input type="password" id="rapidApiKey" placeholder="Your RapidAPI Key" class="input-field"/>
+      <small>Get yours at <a href="https://rapidapi.com/letscrape-6bRBa3QG1q/api/jsearch" target="_blank">RapidAPI JSearch</a></small>
+    </div>
+    <div class="form-group">
+      <label>Google Sheets Webhook URL <span class="badge-opt">optional</span></label>
+      <input type="text" id="sheetsUrl" placeholder="https://script.google.com/macros/s/…/exec" class="input-field"/>
+      <small>Deploy the Apps Script (see below) and paste the web app URL here</small>
+    </div>
+    <div class="form-group">
+      <label>Claude Model</label>
+      <select class="input-field" id="claudeModel">
+        <option value="claude-haiku-3-5">claude-haiku-3-5 — Fastest &amp; cheapest</option>
+        <option value="claude-sonnet-4-5" selected>claude-sonnet-4-5 — Best balance (recommended)</option>
+        <option value="claude-opus-4-5">claude-opus-4-5 — Most capable</option>
+      </select>
+    </div>
+    <button class="btn-primary" onclick="saveSetup()">💾 Save Configuration</button>
+    <div id="setupMsg" class="msg"></div>
+  </div>
+  <div class="card">
+    <h2>🔗 n8n Workflow Blueprint</h2>
+    <p class="card-desc">Import this into your n8n instance to run as a scheduled, cloud-hosted automation.</p>
+    <button class="btn-secondary" onclick="downloadN8nBlueprint()">⬇️ Download n8n Blueprint JSON</button>
+  </div>
+  <div class="card">
+    <h2>📋 Google Apps Script</h2>
+    <p class="card-desc">Copy into <a href="https://script.google.com" target="_blank">script.google.com</a> → New Project → Paste → Deploy as Web App (Anyone).</p>
+    <pre class="code-block" id="appsScriptCode"></pre>
+    <button class="btn-secondary" onclick="copyAppsScript()" style="margin-top:0.8rem">📋 Copy Script</button>
+  </div>
+</section>
+
+<!-- PROFILE -->
+<section class="section" id="sec-profile">
+  <div class="section-header"><h1>My Profile</h1><p>Upload your resume and LinkedIn PDF for Claude to analyse</p></div>
+  <div class="card">
+    <h2>📄 Master Resume</h2>
+    <div class="upload-zone" id="resumeZone" onclick="document.getElementById('resumeFile').click()" ondragover="event.preventDefault()" ondrop="handleDrop(event,'resume')">
+      <div class="upload-icon">📋</div><p>Drop your resume or <strong>click to upload</strong></p><small>PDF, DOCX, or TXT — max 5 MB</small>
+      <input type="file" id="resumeFile" accept=".pdf,.docx,.txt" style="display:none" onchange="handleFileUpload(event,'resume')"/>
+    </div>
+    <div id="resumePreview" class="file-preview hidden"></div>
+  </div>
+  <div class="card">
+    <h2>🔵 LinkedIn Profile PDF</h2>
+    <p class="card-desc">On LinkedIn: <strong>More → Save to PDF</strong>, then upload here.</p>
+    <div class="upload-zone" id="linkedinZone" onclick="document.getElementById('linkedinFile').click()" ondragover="event.preventDefault()" ondrop="handleDrop(event,'linkedin')">
+      <div class="upload-icon">💼</div><p>Drop LinkedIn PDF or <strong>click to upload</strong></p>
+      <input type="file" id="linkedinFile" accept=".pdf" style="display:none" onchange="handleFileUpload(event,'linkedin')"/>
+    </div>
+    <div id="linkedinPreview" class="file-preview hidden"></div>
+  </div>
+  <div class="card">
+    <h2>✍️ Personal Summary <span class="badge-opt">for Claude</span></h2>
+    <textarea class="input-field textarea" id="personalSummary" rows="6" placeholder="Tell Claude about yourself: years of experience, top skills, what you're looking for, companies you admire, salary expectations…"></textarea>
+    <button class="btn-primary" onclick="saveProfile()" style="margin-top:0.8rem">💾 Save Profile</button>
+    <div id="profileMsg" class="msg"></div>
+  </div>
+</section>
+
+<!-- CRITERIA -->
+<section class="section" id="sec-criteria">
+  <div class="section-header"><h1>Job Criteria</h1><p>Define what makes a job a great match</p></div>
+  <div class="card">
+    <h2>🎯 Target Roles</h2>
+    <div class="form-group"><label>Job Titles <span class="req">*</span></label><input class="input-field" id="jobTitles" placeholder="Software Engineer, Full Stack Developer, Backend Engineer"/></div>
+    <div class="form-group"><label>Must-have Keywords</label><input class="input-field" id="keywords" placeholder="React, Node.js, AWS, Python"/></div>
+    <div class="form-group"><label>Exclude Keywords</label><input class="input-field" id="excludeKeywords" placeholder="PHP, legacy, unpaid, internship"/></div>
+  </div>
+  <div class="card">
+    <h2>📍 Location &amp; Work Type</h2>
+    <div class="form-row">
+      <div class="form-group"><label>Location</label><input class="input-field" id="location" placeholder="Remote or San Francisco, CA"/></div>
+      <div class="form-group"><label>Work Type</label><select class="input-field" id="workType"><option value="any">Any</option><option value="remote">Remote Only</option><option value="hybrid">Hybrid</option><option value="onsite">On-site</option></select></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>💰 Compensation &amp; Experience</h2>
+    <div class="form-row">
+      <div class="form-group"><label>Min Salary (USD/yr)</label><input class="input-field" id="minSalary" type="number" placeholder="80000"/></div>
+      <div class="form-group"><label>Experience Level</label><select class="input-field" id="expLevel"><option value="any">Any</option><option value="entry">Entry Level</option><option value="mid">Mid Level</option><option value="senior">Senior</option><option value="staff">Staff / Principal</option></select></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>🤖 Claude Scoring Rules</h2>
+    <p class="card-desc">These rules are fed to Claude when evaluating each job. Be specific.</p>
+    <textarea class="input-field textarea" id="scoringRules" rows="6" placeholder="- Score 90+ if: fully remote, React/TS/Node, salary > $120k&#10;- Score 70-89 if: hybrid OK, modern stack, growth path&#10;- Score below 50 if: PHP/legacy, no salary listed&#10;- Always skip: unpaid, requires 10+ years"></textarea>
+    <div class="form-group" style="margin-top:1.2rem">
+      <label>Min Score to Auto-Apply</label>
+      <div class="slider-row">
+        <input type="range" id="minScoreSlider" min="0" max="100" value="70" oninput="syncSlider(this.value)" class="slider"/>
+        <input class="input-field score-num" id="minScore" type="number" min="0" max="100" value="70" oninput="syncSlider(this.value)"/>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="saveCriteria()">💾 Save Criteria</button>
+    <div id="criteriaMsg" class="msg"></div>
+  </div>
+</section>
+
+<!-- AGENT -->
+<section class="section" id="sec-agent">
+  <div class="section-header"><h1>Run Agent</h1><p>Autonomous job search, evaluation and application workflow</p></div>
+  <div class="card agent-control-card">
+    <div class="agent-status-display">
+      <div class="agent-orb" id="agentOrb"><div class="orb-ring"></div><div class="orb-core">⚡</div></div>
+      <div class="agent-state-text" id="agentStateText">Ready to Launch</div>
+      <div class="agent-sub" id="agentSub">Complete setup, profile, and criteria first</div>
+    </div>
+    <div class="agent-controls">
+      <button class="btn-run" id="runBtn" onclick="toggleAgent()">▶ Start Agent</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2>⚙️ Agent Settings</h2>
+    <div class="form-row">
+      <div class="form-group"><label>Max Jobs to Scan</label><input class="input-field" id="maxJobs" type="number" value="20"/></div>
+      <div class="form-group"><label>Delay Between Evals (ms)</label><input class="input-field" id="appDelay" type="number" value="2000"/></div>
+    </div>
+    <div class="toggles-row">
+      <div class="form-group"><label>Auto-apply if score ≥ threshold</label><label class="toggle-label"><input type="checkbox" id="autoApply" checked/><span class="toggle"></span>Enable auto-apply</label></div>
+      <div class="form-group"><label>Generate Cover Letters</label><label class="toggle-label"><input type="checkbox" id="genCovers"/><span class="toggle"></span>Auto-generate per job</label></div>
+      <div class="form-group"><label>Log to Google Sheets</label><label class="toggle-label"><input type="checkbox" id="logSheets"/><span class="toggle"></span>Send to webhook</label></div>
+      <div class="form-group"><label>Use Local Server Proxy</label><label class="toggle-label"><input type="checkbox" id="useProxy" checked/><span class="toggle"></span>Via localhost:3000</label></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>📟 Live Agent Console</h2>
+    <div class="console-toolbar"><button class="btn-icon" onclick="clearConsole()">🗑 Clear</button></div>
+    <div class="console" id="agentConsole"><div class="console-line dim">// Agent console — output appears here when running</div></div>
+  </div>
+</section>
+
+<!-- LOG -->
+<section class="section" id="sec-log">
+  <div class="section-header"><h1>Application Log</h1><p>Every job evaluated and applied to</p></div>
+  <div class="log-toolbar">
+    <input class="input-field search-input" id="logSearch" placeholder="🔍 Search company or role…" oninput="filterLog()"/>
+    <select class="input-field" id="logFilter" onchange="filterLog()"><option value="all">All</option><option value="applied">Applied</option><option value="skipped">Skipped</option><option value="review">Review</option></select>
+    <button class="btn-secondary" onclick="exportCSV()">⬇️ Export CSV</button>
+    <button class="btn-secondary" onclick="clearLog()">🗑️ Clear</button>
+  </div>
+  <div class="table-wrap">
+    <table class="log-table">
+      <thead><tr><th>#</th><th>Company</th><th>Role</th><th>Location</th><th>Score</th><th>Status</th><th>Time</th><th>Actions</th></tr></thead>
+      <tbody id="logBody"><tr><td colspan="8" class="empty-row">No applications yet.</td></tr></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ANALYTICS -->
+<section class="section" id="sec-analytics">
+  <div class="section-header"><h1>Analytics</h1><p>Insights from your job search campaign</p></div>
+  <div class="analytics-grid">
+    <div class="card chart-card"><h2>📊 Score Distribution</h2><canvas id="scoreChart" height="200"></canvas></div>
+    <div class="card chart-card"><h2>🍩 Application Status</h2><canvas id="statusChart" height="200"></canvas></div>
+  </div>
+  <div class="card"><h2>🏢 Top Companies by Score</h2><div id="topCompanies" class="top-list"><div class="activity-empty">Run the agent first.</div></div></div>
+</section>
+
+<!-- TOOLS -->
+<section class="section" id="sec-tools">
+  <div class="section-header"><h1>Tools</h1><p>Standalone AI utilities for your job search</p></div>
+  <div class="card">
+    <h2>✍️ Cover Letter Generator</h2>
+    <p class="card-desc">Generate a tailored cover letter for any job using Claude.</p>
+    <div class="form-group"><label>Company</label><input class="input-field" id="clCompany" placeholder="Stripe"/></div>
+    <div class="form-group"><label>Role</label><input class="input-field" id="clRole" placeholder="Senior Frontend Engineer"/></div>
+    <div class="form-group"><label>Job Description</label><textarea class="input-field textarea" id="clDesc" rows="5" placeholder="Paste the job description…"></textarea></div>
+    <button class="btn-primary" id="genCLBtn" onclick="generateManualCoverLetter()">✨ Generate with Claude</button>
+    <div class="cover-output hidden" id="coverOutput">
+      <div class="cover-letter-box" id="coverLetterText"></div>
+      <button class="btn-secondary" onclick="copyCoverLetter()" style="margin-top:0.8rem">📋 Copy to Clipboard</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2>📊 Resume Fit Analyser</h2>
+    <p class="card-desc">Ask Claude to analyse how well your resume matches a specific job.</p>
+    <div class="form-group"><label>Job Description</label><textarea class="input-field textarea" id="rsJobDesc" rows="4" placeholder="Paste job description…"></textarea></div>
+    <button class="btn-primary" onclick="scoreResume()">🔍 Analyse Fit</button>
+    <div class="cover-output hidden" id="resumeScoreOutput"><div class="cover-letter-box" id="resumeScoreText"></div></div>
+  </div>
+</section>
+
+</main>
+
+<!-- MODAL -->
+<div class="modal-overlay hidden" id="modalOverlay" onclick="closeModal()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div id="modalContent"></div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
