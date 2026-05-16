@@ -510,7 +510,7 @@ function exportCSV() {
 
 async function logToSheets(job, scoreData, status) {
   try {
-    await fetch('http://localhost:3000/api/log-sheets', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ sheetsUrl: state.config.sheetsUrl, entry: { company:job.company, role:job.role, location:job.location, score:scoreData.score, status, verdict:scoreData.verdict, time:new Date().toISOString(), coverLetter: state.agent.coverLetters[job.id]||'' } }) });
+    await fetch(PROXY + '/api/log-sheets', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ sheetsUrl: state.config.sheetsUrl, entry: { company:job.company, role:job.role, location:job.location, score:scoreData.score, status, verdict:scoreData.verdict, time:new Date().toISOString(), coverLetter: state.agent.coverLetters[job.id]||'' } }) });
   } catch {}
 }
 
@@ -629,7 +629,7 @@ async function checkServer() {
   const dot = document.getElementById('serverDot');
   const txt = document.getElementById('serverTxt');
   try {
-    const r = await fetch('http://localhost:3000/api/health', { signal: AbortSignal.timeout(2000) });
+    const r = await fetch(PROXY + '/api/health', { signal: AbortSignal.timeout(2000) });
     if (r.ok) { dot.className='server-dot ok'; txt.textContent='Server online ✓'; return true; }
   } catch {}
   dot.className = 'server-dot err'; txt.textContent = 'Server offline';
