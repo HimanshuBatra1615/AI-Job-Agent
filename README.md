@@ -15,7 +15,7 @@ An autonomous, production-ready AI agent that automates the tedious parts of you
 
 ## 📸 Product Interface
 
-![Dashboard UI](https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=1000&auto=format&fit=crop) *(Replace with actual screenshot of your dark mode dashboard)*
+![Dashboard UI](./dashboard-preview.png
 
 ---
 
