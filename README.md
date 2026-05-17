@@ -15,7 +15,7 @@ An autonomous, production-ready AI agent that automates the tedious parts of you
 
 ## 📸 Product Interface
 
-![Dashboard UI](./dashboard-preview.png
+![Dashboard UI](./dashboard-preview.png)
 
 ---
 
